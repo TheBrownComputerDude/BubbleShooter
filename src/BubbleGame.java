@@ -1,4 +1,5 @@
 import java.util.Random;
+import java.util.jar.JarOutputStream;
 
 public class BubbleGame
 {
@@ -6,6 +7,8 @@ public class BubbleGame
     private Bubble[][] board;
     private Bubble nextBubble;
     private Random rand;
+    private boolean win;
+    private boolean lose;
 
     public BubbleGame(int rows, int cols, int initalRows, int numColors)
     {
@@ -13,6 +16,8 @@ public class BubbleGame
         this.cols = cols;
         this.initialRows = initalRows;
         this.numColors = numColors;
+        this.win = false;
+        this.lose = false;
 
         init();
     }
@@ -38,7 +43,7 @@ public class BubbleGame
         int height = Shared.ROWS*Shared.DIAMETER + Shared.DIAMETER;
 
         int x = width/2-Shared.RADIUS;
-        int y = height+Shared.RADIUS;
+        int y = height;
         this.nextBubble = new Bubble(-1,-1, Shared.COLORS[rand.nextInt(this.numColors)]);
         this.nextBubble.setX(x);
         this.nextBubble.setY(y);
@@ -51,6 +56,7 @@ public class BubbleGame
 
     public boolean checkCollision()
     {
+        if(this.nextBubble.getRow() == 0) return true;
         for(int[] pair : this.nextBubble.getRow() % 2 == 0 ? Shared.EVEN_NEIGHBORS : Shared.ODD_NEIGHBORS)
         {
             int neighborRow = this.nextBubble.getRow() + pair[0];
@@ -64,17 +70,42 @@ public class BubbleGame
         return false;
     }
 
-    public void addBubble(Bubble b)
+    public boolean addBubble(Bubble b)
     {
-        this.board[b.getRow()][b.getCol()] = b;
-        int count = countPop(b.getRow(), b.getCol());
-        if(count >= 3)
+        try
         {
-            pop();
-            checkFloating();
+            boolean bottom = false;
+            if(b.getCol() == this.cols && this.board[b.getRow()][b.getCol()-1].getColor() == Shared.EMPTY)
+                b.setCol(b.getCol()-1);
+            if(b.getRow() == this.rows)
+            {
+                System.out.println("in");
+                bottom = true;
+            }
+            if(!bottom) this.board[b.getRow()][b.getCol()] = b;
+            int count = countPop(b.getRow(), b.getCol(),b.getColor());
+            if(bottom && count >= 2)
+            {
+                pop();
+                checkFloating();
+            }
+            else if (bottom)
+            {
+                return false;
+            }
+            else if (count >= 3)
+            {
+                pop();
+                checkFloating();
+            } else
+            {
+                resetCheck();
+            }
+            return true;
         }
-        else{
-            resetCheck();
+        catch(Exception e)
+        {
+            return false;
         }
     }
 
@@ -132,10 +163,10 @@ public class BubbleGame
         }
     }
 
-    private int countPop(int row, int col)
+    private int countPop(int row, int col, char color)
     {
         int count = 1;
-        this.board[row][col].setChecked(true);
+        if(row < this.rows) this.board[row][col].setChecked(true);
         for(int[] pair : row % 2 == 0 ? Shared.EVEN_NEIGHBORS : Shared.ODD_NEIGHBORS)
         {
             int neighborRow = row + pair[0];
@@ -143,9 +174,9 @@ public class BubbleGame
             if(neighborRow >= 0 && neighborRow < this.rows && neighborCol >=0 && neighborCol < this.cols &&
                 this.board[neighborRow][neighborCol].getColor() != Shared.EMPTY &&
                 !this.board[neighborRow][neighborCol].isChecked() &&
-                this.board[neighborRow][neighborCol].getColor() == this.board[row][col].getColor())
+                this.board[neighborRow][neighborCol].getColor() == color)
             {
-                count += countPop(neighborRow,neighborCol);
+                count += countPop(neighborRow,neighborCol,color);
             }
         }
         return count;
@@ -176,6 +207,35 @@ public class BubbleGame
             }
             System.out.println();
         }
+    }
+
+    public boolean checkWin()
+    {
+        for(int i = 0; i < this.cols; i++)
+        {
+            if(this.board[0][i].getColor() != Shared.EMPTY) return false;
+        }
+        return true;
+    }
+
+    public boolean isLose()
+    {
+        return lose;
+    }
+
+    public boolean isWin()
+    {
+        return win;
+    }
+
+    public void setLose()
+    {
+        this.lose = true;
+    }
+
+    public void setWin()
+    {
+        this.win = true;
     }
 
     public static void main(String[] args)

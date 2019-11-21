@@ -1,7 +1,11 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
 public class GameGUI extends JPanel
 {
@@ -12,6 +16,10 @@ public class GameGUI extends JPanel
     private double mouseX;
     private double mouseY=20;
     private boolean fired;
+    private Timer t;
+
+    private JLabel win;
+    private JLabel lose;
 
     private int x1;
     private int y1;
@@ -22,7 +30,7 @@ public class GameGUI extends JPanel
     {
         this.frame = new JFrame();
         int buffer = Shared.DIAMETER * 3;
-        this.width = Shared.COLS*Shared.DIAMETER + Shared.DIAMETER;
+        this.width = (int)(Shared.COLS*Shared.DIAMETER + Shared.DIAMETER * .75);
         this.height = Shared.ROWS*Shared.DIAMETER + Shared.DIAMETER;
 
         this.x1 = this.width/2;
@@ -33,8 +41,8 @@ public class GameGUI extends JPanel
         this.frame.setTitle("Bubble Shooter Game");
         this.frame.setResizable(false);
         this.frame.getMousePosition();
-        this.game = new BubbleGame(Shared.ROWS,Shared.COLS,6,3);
-        Timer t = new Timer(100, e -> {
+        this.game = new BubbleGame(Shared.ROWS,Shared.COLS,Shared.STARTINGROWS,Shared.NUMCOLORS);
+        t = new Timer(100, e -> {
             if(fired)
             {
                 Bubble b = game.getNextBubble();
@@ -46,8 +54,22 @@ public class GameGUI extends JPanel
                 if(game.checkCollision())
                 {
                     fired = false;
-                    game.addBubble(b);
-                    game.generateNextBubble();
+                    if(!game.addBubble(b)){
+                        t.stop();
+                        game.setLose();
+                        repaint();
+                        return;
+                    }
+                    else if(game.checkWin()){
+                        t.stop();
+                        game.setWin();
+                        repaint();
+                        return;
+                    }
+                    else
+                    {
+                        game.generateNextBubble();
+                    }
                 }
             }
             else if(mouseY > 0)
@@ -102,7 +124,14 @@ public class GameGUI extends JPanel
 
             }
         });
+       // win = new JLabel("You Win");
+      //  lose = new JLabel("You Lose");
+        //win.setVisible(false);
+      //  lose.setVisible(false);
+
         this.frame.add(this);
+        //this.frame.add(win);
+        //this.frame.add(lose);
 
         this.frame.setVisible(true);
         this.frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -112,24 +141,45 @@ public class GameGUI extends JPanel
     public void paint(Graphics g)
     {
         super.paint(g);
-
         g.clearRect(0,0,this.width,this.height + Shared.DIAMETER*3);
+        g.setColor(Color.BLACK);
+        if(game.isWin())
+        {
+            Graphics2D g2 = (Graphics2D)g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.drawString("You Win",100,100);
+            return;
+        }
+        else if(game.isLose())
+        {
+            Graphics2D g2 = (Graphics2D)g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.drawString("You Lose",100,100);
+            return;
 
+        }
+        g.fillRect(0,0,this.width,this.height+Shared.DIAMETER*3);
         for(int i = 0; i < game.getRows(); i++)
         {
             for(int j = 0; j < game.getCols(); j++)
             {
                 Bubble b = game.getBubble(i,j);
-                g.setColor(Shared.colorMap.get(b.getColor()));
-                g.fillOval(j*Shared.DIAMETER + (i % 2 == 0 ? 0 : Shared.RADIUS),i*Shared.DIAMETER,Shared.DIAMETER,Shared.DIAMETER);
+          //      g.setColor(Shared.colorMap.get(b.getColor()));
+          //      g.fillOval(j*Shared.DIAMETER + (i % 2 == 0 ? 0 : Shared.RADIUS),i*Shared.DIAMETER,Shared.DIAMETER,Shared.DIAMETER);
+                g.drawImage(Shared.colorMap.get(b.getColor()), j*Shared.DIAMETER + (i % 2 == 0 ? 0 : Shared.RADIUS),i*Shared.DIAMETER,Shared.DIAMETER,Shared.DIAMETER,null);
             }
         }
 
         Bubble b = game.getNextBubble();
-        g.setColor(Color.BLACK);
-        if(!fired) g.drawLine(x1,y1,x1+x2,y1-y2);
-        g.setColor(Shared.colorMap.get(b.getColor()));
-        g.fillOval((int)b.getX(), (int)b.getY() , Shared.DIAMETER, Shared.DIAMETER);
+        g.setColor(Color.WHITE);
+        Graphics2D g2 = (Graphics2D)g;
+        g2.setStroke(new BasicStroke(6));
+        if(!fired) g2.drawLine(x1,y1,x1+x2,y1-y2);
+        //g.setColor(Shared.colorMap.get(b.getColor()));
+        //g.fillOval((int)b.getX(), (int)b.getY() , Shared.DIAMETER, Shared.DIAMETER);
+        g.drawImage(Shared.colorMap.get(b.getColor()), (int)b.getX(),(int)b.getY(),Shared.DIAMETER,Shared.DIAMETER,null);
     }
     public static void main(String[] args)
     {

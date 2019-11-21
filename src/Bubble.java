@@ -23,6 +23,16 @@ public class Bubble
         return this.col;
     }
 
+    public void setCol(int col)
+    {
+        this.col = col;
+    }
+
+    public void setRow(int row)
+    {
+        this.row = row;
+    }
+
     public char getColor()
     {
         return this.color;
