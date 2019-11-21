@@ -79,12 +79,11 @@ public class BubbleGame
                 b.setCol(b.getCol()-1);
             if(b.getRow() == this.rows)
             {
-                System.out.println("in");
                 bottom = true;
             }
             if(!bottom) this.board[b.getRow()][b.getCol()] = b;
             int count = countPop(b.getRow(), b.getCol(),b.getColor());
-            if(bottom && count >= 2)
+            if (count >= 3)
             {
                 pop();
                 checkFloating();
@@ -93,11 +92,7 @@ public class BubbleGame
             {
                 return false;
             }
-            else if (count >= 3)
-            {
-                pop();
-                checkFloating();
-            } else
+            else
             {
                 resetCheck();
             }
